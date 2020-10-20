@@ -1,0 +1,90 @@
+M - Map
+S - String
+T - Timestamp
+R - Reference
+C - Collection
+A - Array
+
+
+
+firebase database construction
+
+users
+D   UID
+    S   Email
+    S   Name
+    M   CarRegs
+        S   Car 1
+        S   Car 2
+    R   groupRef
+    S   phone
+MarketSpaces
+    D    SID
+            A Dates
+                0: ?-?-2020 - numbers are indexes
+                1: ?-?-2020
+            I spaceID
+    
+Groups
+D   GID
+    M   defaultAssignment
+        S    Mon - Friday : R   user assignment
+    R   spaceRef
+    S   Name
+Spaces
+D   SID 
+    R   groupRef
+    S   type
+    S   quadrant
+spacesFreed
+D   SID
+    R   groupRef
+    A   groupDates
+            0:1/1/2020
+    A   publicDates
+            0:2/1/2020
+            
+
+
+HomePage 
+    (GET DATA) Spaces assigned to me:                                                                   done
+        tableData = empty array
+        (GET COLLECTION) x = users/UID/spacereassigned/*
+        x.forEachDocument:
+            spaceDates = Dates(*)
+            retrieve spaceID
+            construct array elements as [spaceDates[i], SID] - maybe [spaceDates[i], SID, type]
+            concatenate with tableData
+        order tableData by date
+        display in tableComponent
+    
+    (SET DATA) Free a space:                                                                           done
+        (GET DOC) x = users/UID/spacereassigned/(spaceToFreeID)
+        (DELETE) x.Dates(dateToFree)
+
+        if(users/UID/groupRef/spaceRef == spaceToFreeID):
+            (ADD) spacesFreed/spaceToFreeID/groupDates(Date)
+
+        if(users/UID/groupRef/spaceRef != spaceToFreeID):
+            (ADD) spacesFreed/spaceToFreeID/publicDates(Date)
+
+LookForSpace
+    (GET DATA) See all available spaces:                                                                done
+        tableData = empty array
+        (GET) users/UID/groupRef/spaceRef - groupSpaceID
+        (GET DOC) spacesFreed/groupSpace/groupDates/* - groupDateDoc
+            groupDates = groupDateDoc.groupDates(*)
+            construct array elements as [groupDates[i], groupSpaceID]
+            concatenate with TableData
+        
+        (GET COLLECTION) x = spacesFreed
+        x.forEachDocument:
+            retrieve spaceID
+            publicDates = publicDates(*)
+            construct array elements as [publicDates[i], SID]
+            concatenate with tableData
+        order tableData by date
+
+    (SET DATA) Reserve a space:                                                                        done
+        (ADD) users/UID/spacereassigned/SID.dates(Date)
+        (DELETE) spacesFreed/SID/(group/public)Dates(Date)
